@@ -1,0 +1,38 @@
+# --- Secrets & local configuration -------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Python ------------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# --- Model artifacts, caches & runtime data (never committed) -----------------
+models/*
+!models/.gitkeep
+.cache/
+data/
+*.safetensors
+*.bin
+*.onnx
+*.msgpack
+*.ot
+*.h5
+
+# --- Assignment brief: kept local only (owner decision) -----------------------
+homework02-*.md
+
+# --- Editors / OS ------------------------------------------------------------
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp

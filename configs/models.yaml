@@ -1,0 +1,26 @@
+# Zero-shot model catalogue. Add a compatible model by appending an entry — no code changes.
+# `revision` MUST be a 40-char commit SHA (immutable); branch names such as `main` are rejected.
+# Values verified against the Hugging Face Hub on 2026-11-11 (research R4).
+models:
+  - key: deberta-v3-zeroshot-v2
+    name: DeBERTa Zero-Shot v2
+    repo_id: MoritzLaurer/deberta-v3-base-zeroshot-v2.0
+    task: zero-shot-classification
+    revision: 8e7e5af5983a0ddb1a5b45a38b129ab69e2258e8
+    license: mit
+    inference_defaults:
+      multi_label: false
+      hypothesis_template: "This text is about {}"   # from the model card
+
+  - key: bart-large-mnli
+    name: BART MNLI
+    repo_id: facebook/bart-large-mnli
+    task: zero-shot-classification
+    revision: d7645e127eaf1aefc7862fd59a17a5aa8558b8ce
+    license: mit
+    inference_defaults:
+      multi_label: false
+      hypothesis_template: "This example is {}."     # transformers pipeline default; matches the card
+    # download:                                       # optional override of the default file filters
+    #   allow_patterns: ["*.json", "*.safetensors", "*.model", "*.txt"]
+    #   ignore_patterns: ["onnx/*", "*.bin", "*.msgpack", "*.ot", "*.h5"]

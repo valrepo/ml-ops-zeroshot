@@ -1,0 +1,46 @@
+services:
+  minio:
+    # Official minio/minio images are unavailable; pinned community redistribution (ADR-0003).
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    ports:
+      - "${MINIO_API_PORT:-9010}:9000"
+      - "${MINIO_CONSOLE_PORT:-9011}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  app:
+    profiles: ["app"]
+    build: .
+    image: zeroshot-app:0.1.0
+    env_file: .env
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MODEL_DIR: /app/models
+      HF_HOME: /app/.cache/huggingface
+      LABEL_SETS_FILE: /app/data/label_sets.yaml
+      INFERENCE_DEVICE: cpu
+    # Run as the host user so bind-mounted directories stay writable on Linux (ADR-0003, R12).
+    user: "${APP_UID:-10001}:${APP_GID:-10001}"
+    ports:
+      - "${APP_PORT:-8502}:8501"
+    volumes:
+      - ./models:/app/models
+      - ./.cache/huggingface:/app/.cache/huggingface
+      - ./data:/app/data
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  minio-data:

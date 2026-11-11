@@ -1,0 +1,11 @@
+# Seed label sets (tracked in git, never written by the app).
+# On first start the app copies this file to LABEL_SETS_FILE (default data/label_sets.yaml),
+# which holds the administrator's edits.
+label_sets:
+  - key: default
+    name: Default topics
+    labels: [sports, politics, technology, finance]
+
+  - key: extended
+    name: Extended topics
+    labels: [sports, politics, technology, finance, health, education]

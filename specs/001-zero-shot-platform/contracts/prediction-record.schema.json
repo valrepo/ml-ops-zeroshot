@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/zeroshot/prediction-record/1.0.json",
+  "title": "PredictionRecord",
+  "description": "One persisted zero-shot classification. Stored in MinIO at predictions/YYYY/MM/DD/{request_id}.json (UTC date of `timestamp`). Cross-field rules that JSON Schema cannot express are listed in `x-invariants` and enforced by the PredictionRecord pydantic model.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "timestamp",
+    "input_text",
+    "predicted_class",
+    "confidence",
+    "candidate_labels",
+    "ranked_predictions",
+    "model_name",
+    "model",
+    "model_revision",
+    "inference_parameters",
+    "label_set",
+    "application_version"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "request_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?Z$"
+    },
+    "input_text": { "type": "string", "minLength": 1 },
+    "predicted_class": { "type": "string", "minLength": 1 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "candidate_labels": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+    },
+    "ranked_predictions": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "score"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "model_name": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "model_revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "inference_parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["multi_label", "hypothesis_template", "device"],
+      "properties": {
+        "multi_label": { "type": "boolean" },
+        "hypothesis_template": { "type": "string", "pattern": "^[^{}]*\\{\\}[^{}]*$" },
+        "device": { "type": "string", "enum": ["cpu", "mps"] }
+      }
+    },
+    "label_set": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$" },
+    "application_version": { "type": "string", "minLength": 1 },
+    "inference_latency_ms": { "type": ["number", "null"], "minimum": 0 },
+    "session_id": { "type": ["string", "null"] }
+  },
+  "x-invariants": [
+    "predicted_class == ranked_predictions[0].label",
+    "confidence == ranked_predictions[0].score",
+    "ranked_predictions is sorted by score descending; ties keep candidate_labels order",
+    "multiset of ranked_predictions[].label == candidate_labels (same length, same members)",
+    "if inference_parameters.multi_label is false: abs(sum(ranked_predictions[].score) - 1) < 1e-6",
+    "object key date (YYYY/MM/DD) == UTC date of timestamp; object key filename == request_id + '.json'"
+  ]
+}

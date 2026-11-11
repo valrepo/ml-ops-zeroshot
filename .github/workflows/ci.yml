@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.7"
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked
+
+      - name: requirements.txt is in sync with uv.lock
+        # Re-run the exact export command: uv embeds the command line in the file header.
+        run: |
+          uv export --format requirements-txt --no-dev --no-hashes --output-file requirements.txt
+          git diff --exit-code requirements.txt
+
+      - name: Format and lint
+        run: |
+          uv run ruff format --check .
+          uv run ruff check .
+
+      - name: Repository hygiene (no secrets, models, caches)
+        run: uv run python scripts/check_hygiene.py
+
+      - name: Unit tests (offline, no model downloads)
+        run: uv run pytest tests/unit
+
+      - name: Start MinIO
+        run: |
+          cp .env.example .env
+          docker compose up -d --wait minio
+
+      - name: Integration and end-to-end tests (real MinIO)
+        env:
+          REQUIRE_MINIO: "1"
+        run: uv run pytest -m integration tests/integration tests/e2e
+
+      - name: MinIO logs
+        if: failure()
+        run: docker compose logs minio
+
+      - name: Stop MinIO
+        if: always()
+        run: docker compose down -v

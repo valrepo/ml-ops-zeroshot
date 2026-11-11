@@ -1,0 +1,60 @@
+[project]
+name = "zeroshot"
+version = "0.1.0"
+description = "Reproducible zero-shot text-classification platform (Streamlit + Hugging Face + PyTorch + MinIO)"
+requires-python = ">=3.14,<3.15"
+# NOTE: no `readme` field on purpose; the Dockerfile installs the project without README.md.
+dependencies = [
+    "torch>=2.15,<3",
+    "transformers>=5.22,<6",
+    "huggingface_hub>=2.4,<3",
+    "streamlit>=1.67,<2",
+    "minio>=7.2,<8",
+    "pydantic>=2.14,<3",
+    "pydantic-settings>=2.16,<3",
+    "pyyaml>=6.0,<7",
+    "filelock>=4.2,<5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2,<10",
+    "ruff>=0.17,<0.18",
+    "jsonschema>=4,<5",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv]
+required-version = ">=0.13.7,<0.14"
+
+# CPU-only torch on Linux (Docker/CI); macOS uses the PyPI wheel (research R3).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: needs a real MinIO (skipped locally if unreachable; required in CI via REQUIRE_MINIO=1)",
+    "model: loads a real Hugging Face model (opt-in, excluded by default)",
+]
+addopts = "-m 'not model'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = ["specs", ".specify", ".claude", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S108", "S603", "S607"]
+"scripts/**" = ["S603", "S607"]
